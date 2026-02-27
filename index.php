@@ -20,13 +20,17 @@ if (isset($_GET['country'])) {
 <body>
     <form method="GET">
         <label>Select Country:</label>
+
         <select name="country">
-            <option value="all">All Countries</option>
+            <option value="all" <?= ($selectedCountry === "all") ? "selected" : "" ?>>All Countries</option>
             <?php
             $result = $db->query("SELECT * FROM Countries");
 
             while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
-                echo "<option value='" . $row['CountryCode'] . "'>" . $row['CountryName'] . "</option>";
+                $code = htmlspecialchars($row['CountryCode']);
+                $name = htmlspecialchars($row['CountryName']);
+                $isSelected = ($selectedCountry === $row['CountryCode']) ? "selected" : "";
+                echo "<option value='$code' $isSelected>$name</option>";
             }
             ?>
         </select>
@@ -35,16 +39,31 @@ if (isset($_GET['country'])) {
     </form>
 
     <?php
-    if($selectedCountry == "all") {
+    if($selectedCountry === "all") {
         // Display all images
         $result = $db->query("SELECT * FROM ImageDetails");
 
             while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
-                echo "<img src='./images/" . $row['FileName'] . "'>" . "</img>";
+                $file = htmlspecialchars($row['FileName']);
+                $title = htmlspecialchars($row['Title']);
+                echo "<img src='./images/$file' alt='$title' style='width:200px; margin:8px;'>";
             }
-    } else {
-        // Here we will handle displaying the images associated with code
+    } 
+    else {
+         // Display only images for the selected country
+    $stmt = $db->prepare(
+        "SELECT ImageID, Title, FileName
+        FROM ImageDetails
+        WHERE CountryCode = :cc
+        ORDER BY ImageID"
+    );
+    $stmt->execute([":cc" => $selectedCountry]);
 
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $file = htmlspecialchars($row['FileName']);
+        $title = htmlspecialchars($row['Title']);
+        echo "<img src='./images/$file' alt='$title' style='width:200px; margin:8px;'>";
+        }
     }
     
     ?>
